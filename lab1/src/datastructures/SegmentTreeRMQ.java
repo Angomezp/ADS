@@ -18,13 +18,13 @@ public class SegmentTreeRMQ implements rmqInterface {
         this.n = arr.length;
 
         // safe size
-        tree = new int[4 * n + 2];
-        tree[0] = -1; // Used to indicate invalid index in query results as 1-based indexing is used for tree nodes 
+        this.tree = new int[4 * this.n + 2];
+        this.tree[0] = -1; // Used to indicate invalid index in query results as 1-based indexing is used for tree nodes 
 
         // memory accounting
-        memoryBytes = (long) (4 * n + 2) * Integer.BYTES;
+        this.memoryBytes = (long) (4 * this.n + 2) * Integer.BYTES;
 
-        build(1,0, n - 1);
+        build(1,0, this.n - 1);
     }
 
     
@@ -33,7 +33,7 @@ public class SegmentTreeRMQ implements rmqInterface {
     private void build(int node, int left, int right) {
         // leaf
         if (left == right) {
-            tree[node] = left;
+            this.tree[node] = left;
             return;
         }
 
@@ -47,23 +47,23 @@ public class SegmentTreeRMQ implements rmqInterface {
 
         build(rightChild, mid + 1, right );
 
-        int leftIndex = tree[leftChild];
+        int leftIndex = this.tree[leftChild];
 
-        int rightIndex = tree[rightChild];
+        int rightIndex = this.tree[rightChild];
 
         // leftmost minimum
-        if (arr[leftIndex] <= arr[rightIndex]) {
-            tree[node] = leftIndex;
+        if (this.arr[leftIndex] <= this.arr[rightIndex]) {
+            this.tree[node] = leftIndex;
 
         } else {
-            tree[node] = rightIndex;
+            this.tree[node] = rightIndex;
         }
     }
 
     // Query the segment tree for the minimum index in range [i, j]
     @Override
     public int RMQ(int i, int j) {
-        return query(1,0,n - 1,i,j);
+        return query(1,0,this.n - 1,i,j);
     }
 
     // returns index of minimum in range [left, right] in the segment tree node representing range [tl, tr]
@@ -75,7 +75,7 @@ public class SegmentTreeRMQ implements rmqInterface {
 
         if ( tl == left && tr == right) {
 
-            return tree[node];
+            return this.tree[node];
         }
 
         int tm  = tl + (tr - tl) / 2;
@@ -92,7 +92,7 @@ public class SegmentTreeRMQ implements rmqInterface {
             return leftIndex;
         }
 
-        if (arr[leftIndex] <= arr[rightIndex]) {
+        if (this.arr[leftIndex] <= this.arr[rightIndex]) {
             return leftIndex;
         } else {
             return rightIndex;
@@ -101,6 +101,6 @@ public class SegmentTreeRMQ implements rmqInterface {
 
     @Override
     public long getMemoryBytes() {
-        return memoryBytes;
+        return this.memoryBytes;
     }
 }

@@ -18,7 +18,7 @@ public class SparseTableRMQ implements rmqInterface {
 
         this.arr = arr;
 
-        int n = arr.length;
+        int n = this.arr.length;
 
         // cantidad de niveles
         int K = 31 - Integer.numberOfLeadingZeros(n);
@@ -39,9 +39,9 @@ public class SparseTableRMQ implements rmqInterface {
 
     private void Preprocess() {
 
-        int n = arr.length;
+        int n = this.arr.length;
 
-        System.arraycopy(arr, 0, sparseTable[0], 0, n);
+        System.arraycopy(this.arr, 0, this.sparseTable[0], 0, n);
 
         // build sparse table
         for (int k = 1; k < this.sparseTable.length; k++) {
@@ -55,7 +55,7 @@ public class SparseTableRMQ implements rmqInterface {
                 int rightIndex = this.sparseTable[k - 1][i + half];
 
                 // leftmost minimum
-                if (arr[leftIndex] <= arr[rightIndex]) {
+                if (this.arr[leftIndex] <= this.arr[rightIndex]) {
                     this.sparseTable[k][i] = leftIndex;
                 } else {
                     this.sparseTable[k][i] = rightIndex;
@@ -68,7 +68,7 @@ public class SparseTableRMQ implements rmqInterface {
     @Override
     public int RMQ(int i, int j) {
 
-        if (i > j || i < 0 || j >= arr.length) {
+        if (i > j || i < 0 || j >= this.arr.length) {
             return -1;
         }
 
@@ -80,7 +80,7 @@ public class SparseTableRMQ implements rmqInterface {
         int rightIndex = this.sparseTable[k][j - (1 << k) + 1];
 
         // leftmost minimum
-        if (arr[leftIndex] <= arr[rightIndex]) {
+        if (this.arr[leftIndex] <= this.arr[rightIndex]) {
             return leftIndex;
         } 
         

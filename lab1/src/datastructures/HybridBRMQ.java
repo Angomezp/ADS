@@ -14,13 +14,11 @@ public class HybridBRMQ implements rmqInterface {
     // Top-level sparse table for block minima
     private final int[][] topST;
 
-    private final int[] topLog2;
-
     // Internal sparse tables for each block
     // blockST[b][k][i]
     private final int[][][] blockST;
 
-    private final int[] blockLog2;
+    private final int[] Log2;
 
     private final long memoryBytes;
 
@@ -36,11 +34,7 @@ public class HybridBRMQ implements rmqInterface {
         this.blockMin = new int[this.numBlocks];
 
         // INTERNAL BLOCK LOGS
-        this.blockLog2 = new int[this.blockSize + 1];
-        this.blockLog2[1] = 0;
-        for (int i = 2; i <= this.blockSize; i++) {
-            this.blockLog2[i] = this.blockLog2[i / 2] + 1;
-        }
+        this.Log2 = BuildLog(Math.max(this.blockSize, this.numBlocks));
 
         // BUILD BLOCK MINIMA
         buildBlockMinima();
@@ -53,15 +47,12 @@ public class HybridBRMQ implements rmqInterface {
         // TOP SPARSE TABLE
         int topK = 32 - Integer.numberOfLeadingZeros(this.numBlocks);
         this.topST = new int[topK][this.numBlocks];
-        this.topLog2 = new int[this.numBlocks + 1];
         buildTopSparseTable();
 
         // MEMORY ACCOUNTING
         long mem = 0;
-        mem += (long) this.numBlocks * Integer.BYTES;
-        mem += (long) (this.blockSize + 1) * Integer.BYTES;
-        mem += (long) topK * this.numBlocks * Integer.BYTES;
-        mem += (long) (this.numBlocks + 1) * Integer.BYTES;
+        mem += (long) this.numBlocks * Integer.BYTES; // block minima
+        mem += (long) topK * this.numBlocks * Integer.BYTES; // top sparse table
 
         // internal sparse tables
         for (int b = 0; b < this.numBlocks; b++) {
@@ -70,10 +61,7 @@ public class HybridBRMQ implements rmqInterface {
             int size = end - start;
             int K = 32 - Integer.numberOfLeadingZeros(size);
 
-            for (int k = 0; k < K; k++) {
-                int len = size - (1 << k) + 1;
-                mem += (long) len * Integer.BYTES;
-            }
+            mem += (long) K * size * Integer.BYTES; // block b sparse table
         }
 
         this.memoryBytes = mem;
@@ -138,15 +126,8 @@ public class HybridBRMQ implements rmqInterface {
     }
 
     private void buildTopSparseTable() {
-        this.topLog2[1] = 0;
-        for (int i = 2; i <= this.numBlocks; i++) {
-            this.topLog2[i] = this.topLog2[i / 2] + 1;
-        }
-
         // base
-        for (int i = 0; i < this.numBlocks; i++) {
-            this.topST[0][i] = this.blockMin[i];
-        }
+        System.arraycopy(this.blockMin, 0, this.topST[0], 0, this.numBlocks);
 
         // build
         for (int k = 1; k < this.topST.length; k++) {
@@ -168,7 +149,7 @@ public class HybridBRMQ implements rmqInterface {
 
     private int queryInsideBlock(int block, int l, int r) {
         int len = r - l + 1;
-        int k = this.blockLog2[len];
+        int k = this.Log2[len];
 
         int leftIndex = this.blockST[block][k][l];
         int rightIndex = this.blockST[block][k][r - (1 << k) + 1];
@@ -182,55 +163,86 @@ public class HybridBRMQ implements rmqInterface {
 
     @Override
     public int RMQ(int i, int j) {
+
+        if (i > j || i < 0 || j >= this.arr.length) {
+            return -1;
+        }
+
+        if (i == j) {
+            return i;
+        }
+
         int leftBlock = i / this.blockSize;
         int rightBlock = j / this.blockSize;
 
         // SAME BLOCK
         if (leftBlock == rightBlock) {
+
             int localL = i % this.blockSize;
             int localR = j % this.blockSize;
+
             return queryInsideBlock(leftBlock, localL, localR);
         }
 
-        // LEFT PARTIAL
+        // LEFT PARTIAL BLOCK
         int leftLocalL = i % this.blockSize;
-        int leftLocalR = Math.min(this.blockSize - 1, this.arr.length - 1);
+
+        int leftGlobalEnd = Math.min((leftBlock + 1) * this.blockSize, this.arr.length) - 1;
+
+        int leftLocalR = leftGlobalEnd % this.blockSize;
 
         int minIndex = queryInsideBlock(leftBlock, leftLocalL, leftLocalR);
 
-        // FULL BLOCKS
+        // FULL BLOCKS IN THE MIDDLE
         int fullLeft = leftBlock + 1;
         int fullRight = rightBlock - 1;
 
         if (fullLeft <= fullRight) {
+
             int len = fullRight - fullLeft + 1;
-            int k = this.topLog2[len];
+
+            int k = this.Log2[len];
 
             int leftCandidate = this.topST[k][fullLeft];
+
             int rightCandidate = this.topST[k][fullRight - (1 << k) + 1];
 
             int candidate;
+
             if (this.arr[leftCandidate] <= this.arr[rightCandidate]) {
                 candidate = leftCandidate;
             } else {
                 candidate = rightCandidate;
             }
 
+            // preserve leftmost minimum
             if (this.arr[candidate] < this.arr[minIndex]) {
                 minIndex = candidate;
             }
         }
 
-        // RIGHT PARTIAL
+        // RIGHT PARTIAL BLOCK
         int rightLocalL = 0;
         int rightLocalR = j % this.blockSize;
 
         int candidate = queryInsideBlock(rightBlock, rightLocalL, rightLocalR);
+
+        // preserve leftmost minimum
         if (this.arr[candidate] < this.arr[minIndex]) {
             minIndex = candidate;
         }
 
         return minIndex;
+    }
+
+
+    private int[] BuildLog(int limit) {
+        int[] logs = new int[limit + 1]; 
+        logs[1] = 0;
+        for (int i = 2; i <= limit; i++) {
+            logs[i] = logs[i / 2] + 1;
+        }
+        return logs;
     }
 
     @Override

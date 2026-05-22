@@ -24,7 +24,7 @@ public class HybridARMQ implements rmqInterface {
 
         this.arr = arr;
 
-        int n = arr.length;
+        int n = this.arr.length;
 
         // b = ceil(log2(n))
         this.blockSize = 32 - Integer.numberOfLeadingZeros(n - 1);
@@ -54,7 +54,7 @@ public class HybridARMQ implements rmqInterface {
 
     private void buildBlockMinima() {
 
-        int n = arr.length;
+        int n = this.arr.length;
 
         for (int b = 0; b < this.numBlocks; b++) {
 
@@ -67,7 +67,7 @@ public class HybridARMQ implements rmqInterface {
             for (int i = start + 1; i <= end; i++) {
 
                 // leftmost minimum
-                if (arr[i] < arr[minIndex]) {
+                if (this.arr[i] < this.arr[minIndex]) {
                     minIndex = i;
                 }
             }
@@ -109,7 +109,7 @@ public class HybridARMQ implements rmqInterface {
 
     @Override
     public int RMQ(int i, int j) {
-        if (i > j || i < 0 || j >= arr.length) {
+        if (i > j || i < 0 || j >= this.arr.length) {
             return -1;
         }
 

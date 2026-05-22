@@ -11,13 +11,13 @@ public class NaiveRMQ implements rmqInterface {
 
     @Override
     public int RMQ(int i, int j) {
-        if (i > j || i < 0 || j >= arr.length) {
+        if (i > j || i < 0 || j >= this.arr.length) {
             return -1;
         }
 
         int min = i;
         for (int k = i; k <= j; k++) {
-            if (arr[k] < arr[min]) {
+            if (this.arr[k] < this.arr[min]) {
                 min = k;
             }
         }

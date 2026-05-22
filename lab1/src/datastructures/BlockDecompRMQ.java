@@ -17,17 +17,17 @@ public class BlockDecompRMQ implements rmqInterface {
 
         this.arr = arr;
 
-        int n = arr.length;
+        int n = this.arr.length;
 
         // b = ceil(sqrt(n))
         this.blockSize = (int) Math.ceil(Math.sqrt(n));
 
-        this.numBlocks = (n + blockSize - 1) / blockSize;
+        this.numBlocks = (n + this.blockSize - 1) / this.blockSize;
 
-        this.blockMin = new int[numBlocks];
+        this.blockMin = new int[this.numBlocks];
 
         // memory accounting
-        this.memoryBytes = (long) numBlocks * Integer.BYTES;
+        this.memoryBytes = (long) this.numBlocks * Integer.BYTES;
 
         preprocess();
     }
