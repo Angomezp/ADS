@@ -28,6 +28,8 @@ public class Main {
         int Trials = 30;
 
         //  Correctness Validation
+
+        System.out.println("Validating implementations with random test cases...");
         
         int[] testArray = RandomGenerator.generateRandomArray(testSize, bound);
         int[][] testQueries = RandomGenerator.generateRandomQueries(numCorrectnessQueries, testArray.length);
@@ -47,7 +49,7 @@ public class Main {
 
         for (rmqInterface impl : impls) {
             boolean ok = Validator.validateDataStructure(impl, testArray, testQueries);
-            System.out.println(impl.getClass().getSimpleName() + " valid: " + ok);
+            System.out.println(" - " + impl.getClass().getSimpleName() + " valid: " + ok);
         }
     }
     
