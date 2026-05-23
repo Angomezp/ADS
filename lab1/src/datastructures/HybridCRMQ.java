@@ -43,6 +43,7 @@ public class HybridCRMQ implements rmqInterface {
         int K = 32 - Integer.numberOfLeadingZeros(this.numBlocks);
         this.topST = new int[K][this.numBlocks];
         this.topLog2 = new int[this.numBlocks + 1];
+        buildTopLogTable();
         buildTopSparseTable();
 
         // MEMORY ACCOUNTING
@@ -95,6 +96,13 @@ public class HybridCRMQ implements rmqInterface {
                     this.topST[k][i] = rightIndex;
                 }
             }
+        }
+    }
+
+    private void buildTopLogTable() {
+        this.topLog2[1] = 0;
+        for (int i = 2; i <= this.numBlocks; i++) {
+            this.topLog2[i] = this.topLog2[i / 2] + 1;
         }
     }
 

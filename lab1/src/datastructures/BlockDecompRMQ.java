@@ -73,12 +73,9 @@ public class BlockDecompRMQ implements rmqInterface {
         if(i == j) {
             return i;
         }
-        // case 1.2 : i and j are the limits of the same block
-        if(i == leftBlock * this.blockSize && j == (rightBlock + 1) * this.blockSize - 1) {
-            return this.blockMin[leftBlock];
-        }
+        
 
-        // case 1.3 : i and j are in the same block but they are not the limits of the block
+        // case 1.2 : i and j are in the same block but they are not the limits of the block
         if (leftBlock == rightBlock) {
 
             for (int k = i + 1; k <= j; k++) {

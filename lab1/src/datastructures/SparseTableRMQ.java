@@ -20,8 +20,7 @@ public class SparseTableRMQ implements rmqInterface {
 
         int n = this.arr.length;
 
-        // cantidad de niveles
-        int K = 31 - Integer.numberOfLeadingZeros(n);
+        int K = 32 - Integer.numberOfLeadingZeros(Math.max(n, 1));
 
         this.sparseTable = new int[K][n];
         this.log2 = new int[n + 1];
@@ -41,7 +40,10 @@ public class SparseTableRMQ implements rmqInterface {
 
         int n = this.arr.length;
 
-        System.arraycopy(this.arr, 0, this.sparseTable[0], 0, n);
+        // initialize level 0 with indices (sparseTable stores indices of minima)
+        for (int i = 0; i < n; i++) {
+            this.sparseTable[0][i] = i;
+        }
 
         // build sparse table
         for (int k = 1; k < this.sparseTable.length; k++) {

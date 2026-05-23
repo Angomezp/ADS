@@ -125,9 +125,6 @@ public class HybridARMQ implements rmqInterface {
             return i;
         }
 
-        if (i == leftBlock * this.blockSize && j == (rightBlock + 1) * this.blockSize - 1) {
-            return this.blockMin[leftBlock];
-        }
 
         if (leftBlock == rightBlock) {
 

@@ -2,6 +2,8 @@ package lab1.src.datastructures;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
+
 
 public class FischerHeunRMQ implements rmqInterface {
 
@@ -90,12 +92,23 @@ public class FischerHeunRMQ implements rmqInterface {
 
     // compute cartesian tree type for block [start, end)
     private int computeCartesianType(int start, int end) {
-        int type = 0;
+        Stack<Integer> stack = new Stack<>();
+        stack.push(this.arr[start]);
+        int type = 1;
+
         for (int i = start + 1; i < end; i++) {
-            type <<= 1;
-            if (this.arr[i] > this.arr[i - 1]) {
-                type |= 1;
+            int current = this.arr[i];
+            while (!stack.isEmpty() && stack.peek() > current) {
+                stack.pop();
+                type <<= 1;
             }
+            stack.push(current);
+            type <<= 1;
+            type |= 1;
+        }
+        while (!stack.isEmpty()) {
+            stack.pop();
+            type <<= 1;
         }
         return type;
     }
@@ -160,9 +173,10 @@ public class FischerHeunRMQ implements rmqInterface {
             return queryInsideBlock(leftBlock, i % this.blockSize, j % this.blockSize);
         }
 
-        // left partial
-        int leftEnd = Math.min(((leftBlock + 1) * this.blockSize) - 1, this.arr.length - 1);
-        int minIndex = queryInsideBlock(leftBlock, i % this.blockSize, leftEnd);
+        // left partial (convert global end to local index)
+        int leftEndGlobal = Math.min(((leftBlock + 1) * this.blockSize) - 1, this.arr.length - 1);
+        int leftEndLocal = leftEndGlobal - (leftBlock * this.blockSize);
+        int minIndex = queryInsideBlock(leftBlock, i % this.blockSize, leftEndLocal);
 
         // full blocks
         int fullLeft = leftBlock + 1;
