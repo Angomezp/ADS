@@ -9,7 +9,7 @@ public class SegmentTreeRMQ implements rmqInterface {
 
     private final int n;
 
-    private final long memoryBytes;
+    private long memoryBytes;
 
     public SegmentTreeRMQ(int[] arr) {
 
@@ -19,14 +19,13 @@ public class SegmentTreeRMQ implements rmqInterface {
 
         // safe size
         this.tree = new int[4 * this.n + 2];
-        this.tree[0] = -1; // Used to indicate invalid index in query results as 1-based indexing is used for tree nodes 
-
-        // memory accounting
-        this.memoryBytes = (long) (4 * this.n + 2) * Integer.BYTES;
-
-        build(1,0, this.n - 1);
     }
 
+    @Override
+    public void preprocess() {
+        this.tree[0] = -1; // Used to indicate invalid index in query results as 1-based indexing is used for tree nodes 
+        build(1,0, this.n - 1);
+    }
     
     //Preprocess the segment tree (Build)
 
@@ -97,6 +96,11 @@ public class SegmentTreeRMQ implements rmqInterface {
         } else {
             return rightIndex;
         }
+    }
+
+    @Override
+    public void countMemoryBytes() {
+        this.memoryBytes = (long) (4 * this.n + 2) * Integer.BYTES;
     }
 
     @Override

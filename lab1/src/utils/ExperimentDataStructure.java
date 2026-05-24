@@ -3,30 +3,13 @@ package lab1.src.utils;
 import lab1.src.datastructures.rmqInterface;
 
 public class ExperimentDataStructure {
-    public int[] array;
-    public int[][] queries;
-    public rmqInterface rmq;
+    private final int[] array;
+    private final int[][] queries;
+    private final rmqInterface rmq;
 
-    private String name = rmq.getClass().getSimpleName();
+    private long queryTimeMs;
 
-    // Performance metrics
-    // Preprocess metrics
-    private double AvgPreprocessingTimeMs;
-    private double MaxPreprocessingTimeMs;
-    private double MinPreprocessingTimeMs;
-    private double StddevPreprocessingTimeMs;
-    private double MedianPreprocessingTimeMs;
-
-
-
-    // Query metrics
-    private double maxQueryTimeMs;
-    private double minQueryTimeMs;
-    private double averageQueryTimeMs;
-    private double stddevQueryTimeMs;
-    private double medianQueryTimeMs;
-    private double throughputQueriesPerSec;
-
+    private long preprocessTimeMs;
     // Space metrics
     private long memoryBytes;
 
@@ -35,6 +18,54 @@ public class ExperimentDataStructure {
         this.array = array;
         this.queries = queries;
         this.rmq = rmq;
+    }
+
+    public void Experiment (){
+        int[] indexResults = new int[this.queries.length];
+        int L ;
+        int R ;
+
+        // Preproccess time
+        long startPreprocess = System.currentTimeMillis();
+        this.rmq.preprocess();
+        long endPreprocess = System.currentTimeMillis();
+        this.preprocessTimeMs = endPreprocess - startPreprocess ;
+
+
+        // Query time
+        long startQuery = System.currentTimeMillis();
+        int idx = 0;
+        for (int[] query : this.queries) {
+            L = query[0];
+            R = query[1];
+            indexResults[idx] = this.rmq.RMQ(L, R);
+            idx++;
+        }
+        long endQuery = System.currentTimeMillis();
+        this.queryTimeMs = endQuery - startQuery;
+
+        // Memory usage
+        this.rmq.countMemoryBytes();
+        this.memoryBytes = this.rmq.getMemoryBytes();
+
+        // final check to ensure all queries are executed and correct
+        boolean valid = Validator.confirmQueries(this.array, indexResults, this.queries, this.rmq);
+        if (!valid) {
+            System.out.println("Warning: Query results did not match expected values. Check implementation correctness.");
+        }
+    }
+
+
+    public long getQueryTimeMs() {
+        return this.queryTimeMs;
+    }
+
+    public long getPreprocessTimeMs() {
+        return this.preprocessTimeMs;
+    }
+
+    public long getMemoryBytes() {
+        return this.memoryBytes;
     }
 
 }

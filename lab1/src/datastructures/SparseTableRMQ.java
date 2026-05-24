@@ -11,11 +11,9 @@ public class SparseTableRMQ implements rmqInterface {
     // log2[x] = floor(log2(x))
     private final int[] log2;
 
-    private final long memoryBytes;
+    private long memoryBytes;
 
     public SparseTableRMQ(int[] arr) {
-        
-
         this.arr = arr;
 
         int n = this.arr.length;
@@ -25,18 +23,15 @@ public class SparseTableRMQ implements rmqInterface {
         this.sparseTable = new int[K][n];
         this.log2 = new int[n + 1];
 
-        // sparse table
-        this.memoryBytes = (long) K * n * Integer.BYTES;
-
         // We are not counting the memory usage of the log table as it should be an operation
         // but java does not have explicit log2 function and precomputing it 
         // is more efficient than computing it on the fly
         BuildLogTable();
-
-        Preprocess();
+        this.memoryBytes = 0;
     }
 
-    private void Preprocess() {
+    @Override
+    public void preprocess() {
 
         int n = this.arr.length;
 
@@ -93,6 +88,12 @@ public class SparseTableRMQ implements rmqInterface {
     @Override
     public long getMemoryBytes() {
         return this.memoryBytes;
+    }
+
+    @Override
+    public void countMemoryBytes() {
+        int K = 32 - Integer.numberOfLeadingZeros(Math.max(this.arr.length, 1));
+        this.memoryBytes = (long) K * this.arr.length * Integer.BYTES;
     }
 
     private void BuildLogTable() {

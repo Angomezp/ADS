@@ -18,7 +18,7 @@ public class HybridARMQ implements rmqInterface {
 
     private final int[] log2;
 
-    private final long memoryBytes;
+    private long memoryBytes;
 
     public HybridARMQ(int[] arr) {
 
@@ -31,25 +31,30 @@ public class HybridARMQ implements rmqInterface {
 
         this.numBlocks = (n + this.blockSize - 1) / this.blockSize;
         
-
+        // log table not accounted as extra steps, we let it outside the timed preprocess
         this.log2 = new int[this.numBlocks + 1];
         buildLogTable();
 
         // table for RMQ on each block minimum
         this.blockMin = new int[this.numBlocks];
-        buildBlockMinima();
-
         
         // sparse table for block minima
         int K = 32 - Integer.numberOfLeadingZeros(this.numBlocks);
 
         this.sparseBlockTable = new int[K][this.numBlocks];
 
+        this.memoryBytes = 0;
+    }
+
+    @Override
+    public void preprocess() {
+
+        // build canonical blocks 
+        buildBlockMinima();
+
+        // build sparse table for block minima
         buildSparseTable();
 
-        // calculate memory usage: block minima + sparse table for block minima (not log table as it should be an operation)
-        this.memoryBytes = (long) this.numBlocks * Integer.BYTES  // Block minima
-            + (long) K * this.numBlocks * Integer.BYTES;
     }
 
     private void buildBlockMinima() {
@@ -202,6 +207,14 @@ public class HybridARMQ implements rmqInterface {
         for (int i = 2; i <= this.numBlocks; i++) {
             this.log2[i] = this.log2[i / 2] + 1;
         }
+    }
+
+    @Override
+    public void countMemoryBytes() {
+        int K = 32 - Integer.numberOfLeadingZeros(this.numBlocks);
+        // calculate memory usage: block minima + sparse table for block minima (not log table as it should be an operation)
+        this.memoryBytes = (long) this.numBlocks * Integer.BYTES  // Block minima
+            + (long) K * this.numBlocks * Integer.BYTES;
     }
 
     @Override

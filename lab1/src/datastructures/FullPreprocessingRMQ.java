@@ -2,16 +2,17 @@ package lab1.src.datastructures;
 
 public class FullPreprocessingRMQ implements rmqInterface {
     private final int arr[];
-    private final long memoryBytes;
     private final int[][] lookupTable;
+    private long memoryBytes;
+
 
     public FullPreprocessingRMQ(int arr[]) {
         this.arr = arr;
         this.lookupTable = new int[this.arr.length][this.arr.length];
         // The extra memory usage is for the lookup table, 
         // we need to allocate a full nxn matrix.
-        this.memoryBytes = (long) this.arr.length * this.arr.length * Integer.BYTES;
-        preprocess();
+        this.memoryBytes = 0;
+
     }
 
     @Override
@@ -27,7 +28,8 @@ public class FullPreprocessingRMQ implements rmqInterface {
         return this.memoryBytes;
     }
 
-    private void preprocess() {
+    @Override
+    public void preprocess() {
         int n = this.arr.length;
         for (int i = 0; i < n; i++) {
             this.lookupTable[i][i] = i;
@@ -39,7 +41,12 @@ public class FullPreprocessingRMQ implements rmqInterface {
                 // otherwise we keep the previous minimum index as is less than the new element.
                 this.lookupTable[i][j] = (this.arr[this.lookupTable[i][j - 1]] <= this.arr[j]) ? this.lookupTable[i][j - 1] : j;
             }
-        }  
+        }
+    }
+
+    @Override
+    public void countMemoryBytes() {
+        this.memoryBytes = (long) this.arr.length * this.arr.length * Integer.BYTES;
     }
 
 }

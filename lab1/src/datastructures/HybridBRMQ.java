@@ -20,7 +20,7 @@ public class HybridBRMQ implements rmqInterface {
 
     private final int[] Log2;
 
-    private final long memoryBytes;
+    private long memoryBytes;
 
     public HybridBRMQ(int[] arr) {
         this.arr = arr;
@@ -36,35 +36,28 @@ public class HybridBRMQ implements rmqInterface {
         // INTERNAL BLOCK LOGS
         this.Log2 = BuildLog(Math.max(this.blockSize, this.numBlocks));
 
-        // BUILD BLOCK MINIMA
-        buildBlockMinima();
-
         // INTERNAL SPARSE TABLES
         int blockK = 32 - Integer.numberOfLeadingZeros(this.blockSize);
         this.blockST = new int[this.numBlocks][blockK][];
-        buildInternalSparseTables();
+        
 
         // TOP SPARSE TABLE
         int topK = 32 - Integer.numberOfLeadingZeros(this.numBlocks);
         this.topST = new int[topK][this.numBlocks];
+
+        this.memoryBytes = 0; 
+    }
+
+    @Override
+    public void preprocess() {
+        // BUILD BLOCK MINIMA
+        buildBlockMinima();
+
+        // INTERNAL SPARSE TABLES
+        buildInternalSparseTables();
+
+        // TOP SPARSE TABLE
         buildTopSparseTable();
-
-        // MEMORY ACCOUNTING
-        long mem = 0;
-        mem += (long) this.numBlocks * Integer.BYTES; // block minima
-        mem += (long) topK * this.numBlocks * Integer.BYTES; // top sparse table
-
-        // internal sparse tables
-        for (int b = 0; b < this.numBlocks; b++) {
-            int start = b * this.blockSize;
-            int end = Math.min(start + this.blockSize, n);
-            int size = end - start;
-            int K = 32 - Integer.numberOfLeadingZeros(size);
-
-            mem += (long) K * size * Integer.BYTES; // block b sparse table
-        }
-
-        this.memoryBytes = mem;
     }
 
     private void buildBlockMinima() {
@@ -243,6 +236,29 @@ public class HybridBRMQ implements rmqInterface {
             logs[i] = logs[i / 2] + 1;
         }
         return logs;
+    }
+
+    @Override
+    public void countMemoryBytes() {
+        // MEMORY ACCOUNTING
+
+        int topK = 32 - Integer.numberOfLeadingZeros(this.numBlocks);
+
+        long mem = 0;
+        mem += (long) this.numBlocks * Integer.BYTES; // block minima
+        mem += (long) topK * this.numBlocks * Integer.BYTES; // top sparse table
+
+        // internal sparse tables
+        for (int b = 0; b < this.numBlocks; b++) {
+            int start = b * this.blockSize;
+            int end = Math.min(start + this.blockSize, this.arr.length);
+            int size = end - start;
+            int K = 32 - Integer.numberOfLeadingZeros(size);
+
+            mem += (long) K * size * Integer.BYTES; // block b sparse table
+        }
+
+        this.memoryBytes = mem;
     }
 
     @Override

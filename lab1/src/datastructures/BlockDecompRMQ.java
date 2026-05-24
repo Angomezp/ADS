@@ -11,7 +11,7 @@ public class BlockDecompRMQ implements rmqInterface {
 
     private final int numBlocks;
 
-    private final long memoryBytes;
+    private long memoryBytes;
 
     public BlockDecompRMQ(int[] arr) {
 
@@ -26,13 +26,12 @@ public class BlockDecompRMQ implements rmqInterface {
 
         this.blockMin = new int[this.numBlocks];
 
-        // memory accounting
-        this.memoryBytes = (long) this.numBlocks * Integer.BYTES;
+        this.memoryBytes = 0;
 
-        preprocess();
     }
 
-    private void preprocess() {
+    @Override
+    public void preprocess() {
 
         int n = this.arr.length;
 
@@ -127,5 +126,10 @@ public class BlockDecompRMQ implements rmqInterface {
     @Override
     public long getMemoryBytes() {
         return this.memoryBytes;
+    }
+
+    @Override
+    public void countMemoryBytes() {
+        this.memoryBytes = (long) this.numBlocks * Integer.BYTES;
     }
 }

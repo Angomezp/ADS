@@ -29,4 +29,18 @@ public class Validator {
         return true;
     }
 
+    public static boolean confirmQueries(int[] arr, int[] rmqResults, int[][] queries, rmqInterface rmq) {
+        int i = 0;
+        for (int[] query : queries) {
+            int expectedIndex = getMinIndex(arr, query[0], query[1]);
+            if (expectedIndex != rmqResults[i]) {
+                System.out.printf("Validation failed for query [%d, %d]. Expected index: %d, RMQ index: %d%n",
+                        query[0], query[1], expectedIndex, rmqResults[i]);
+                return false;
+            }
+            i++;
+        }
+        return true;
+    }
+
 }

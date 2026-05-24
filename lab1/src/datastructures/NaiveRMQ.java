@@ -2,7 +2,7 @@ package lab1.src.datastructures;
 
 public class NaiveRMQ implements rmqInterface {
     private final int arr[];
-    private final long memory_bytes;
+    private long memory_bytes;
 
     public NaiveRMQ(int arr[]) {
         this.arr = arr;
@@ -22,6 +22,17 @@ public class NaiveRMQ implements rmqInterface {
             }
         }
         return min;
+    }
+
+    @Override
+    public void preprocess() {
+        // No preprocessing needed for the naive approach
+    }
+
+    @Override
+    public void countMemoryBytes() {
+        // No memory ussage beyond the input array for the naive approach
+        this.memory_bytes = 0;
     }
     @Override
     public long getMemoryBytes() {

@@ -20,7 +20,7 @@ public class HybridCRMQ implements rmqInterface {
     // per-block RMQ instances (Hybrid A / ARMQ)
     private final HybridARMQ[] blocks;
 
-    private final long memoryBytes;
+    private long memoryBytes;
 
     public HybridCRMQ(int[] arr) {
 
@@ -36,26 +36,22 @@ public class HybridCRMQ implements rmqInterface {
 
         this.blocks = new HybridARMQ[this.numBlocks];
 
-        // BUILD BLOCKS
-        buildBlocks();
-
         // TOP SPARSE TABLE
         int K = 32 - Integer.numberOfLeadingZeros(this.numBlocks);
         this.topST = new int[K][this.numBlocks];
         this.topLog2 = new int[this.numBlocks + 1];
         buildTopLogTable();
+
+        this.memoryBytes = 0;
+    }
+
+    @Override
+    public void preprocess() {
+        // BUILD BLOCK MINIMA
+        buildBlocks();
+
+        // TOP SPARSE TABLE
         buildTopSparseTable();
-
-        // MEMORY ACCOUNTING
-        long mem = 0;
-        mem += (long) this.numBlocks * Integer.BYTES; // block minima
-        mem += (long) K * this.numBlocks * Integer.BYTES; // top sparse table
-
-        for (int b = 0; b < this.numBlocks; b++) {
-            mem += this.blocks[b].getMemoryBytes(); // internal block memory
-        }
-
-        this.memoryBytes = mem;
     }
 
     private void buildBlocks() {
@@ -71,6 +67,9 @@ public class HybridCRMQ implements rmqInterface {
             System.arraycopy(this.arr, start, blockArr, 0, end - start);
 
             this.blocks[b] = new HybridARMQ(blockArr);
+
+            // ensure internal block structures are preprocessed
+            this.blocks[b].preprocess();
 
             this.blockMin[b] = this.blocks[b].RMQ(0, blockArr.length - 1) + start;
         }
@@ -168,6 +167,20 @@ public class HybridCRMQ implements rmqInterface {
         }
 
         return minIndex;
+    }
+
+    @Override
+    public void countMemoryBytes() {
+        int K = 32 - Integer.numberOfLeadingZeros(this.numBlocks);
+        long mem = 0;
+        mem += (long) this.numBlocks * Integer.BYTES; // block minima
+        mem += (long) K * this.numBlocks * Integer.BYTES; // top sparse table
+
+        for (int b = 0; b < this.numBlocks; b++) {
+            mem += this.blocks[b].getMemoryBytes(); // internal block memory
+        }
+
+        this.memoryBytes = mem;
     }
 
     @Override

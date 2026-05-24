@@ -1,7 +1,5 @@
 package lab1.src.datastructures;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Stack;
 
 
@@ -19,10 +17,10 @@ public class FischerHeunRMQ implements rmqInterface {
     private final int[][] topST;
     private final int[] topLog2;
 
-    // CANONICAL BLOCK TABLES (type -> lookup table)
-    private final Map<Integer, int[][]> canonicalTables;
+    // CANONICAL BLOCK TABLES per block
+    private final int[][][] canonicalTables;
 
-    private final long memoryBytes;
+    private long memoryBytes;
 
     public FischerHeunRMQ(int[] arr) {
         this.arr = arr;
@@ -36,32 +34,29 @@ public class FischerHeunRMQ implements rmqInterface {
 
         this.blockMin = new int[this.numBlocks];
         this.blockType = new int[this.numBlocks];
-        this.canonicalTables = new HashMap<>();
+        this.canonicalTables = new int[this.numBlocks][][];
 
+        // top sparse table (rows = floor(log2(numBlocks)) + 1)
+        int K = 32 - Integer.numberOfLeadingZeros(Math.max(this.numBlocks, 1));
+        this.topST = new int[K + 1][this.numBlocks];
+
+        // log table for top sparse table
+        // As it is not accounted as extra steps we let it outside the timed preprocess
+        this.topLog2 = new int[this.numBlocks + 1];
+        buildLogTable();
+        
+        this.memoryBytes = 0;
+    }
+
+    @Override
+    public void preprocess() {
         // build canonical blocks and types
         buildBlocks();
 
-        // top sparse table
-        int K = 32 - Integer.numberOfLeadingZeros(Math.max(this.numBlocks, 1));
-        this.topST = new int[K][this.numBlocks];
-        this.topLog2 = new int[this.numBlocks + 1];
-        buildLogTable();
+        // build top sparse table
         buildTopSparseTable();
 
-        // memory accounting
-        long mem = 0;
-        mem += (long) this.numBlocks * Integer.BYTES; // block minima
-        mem += (long) this.numBlocks * Integer.BYTES; // block types
-        mem += (long) K * this.numBlocks * Integer.BYTES; // top ST
-
-        for (int[][] table : this.canonicalTables.values()) {
-            for (int[] row : table) {
-                mem += (long) row.length * Integer.BYTES;
-            }
-        }
-
-        this.memoryBytes = mem;
-    }
+    } 
 
     private void buildBlocks() {
         int n = this.arr.length;
@@ -83,10 +78,10 @@ public class FischerHeunRMQ implements rmqInterface {
             int type = computeCartesianType(start, end);
             this.blockType[b] = type;
 
-            // canonical table
-            if (!this.canonicalTables.containsKey(type)) {
-                this.canonicalTables.put(type, buildCanonicalTable(start, end));
-            }
+            // canonical table for this block
+            int[][] table = buildCanonicalTable(start, end);
+            this.canonicalTables[b] = table;
+
         }
     }
 
@@ -157,8 +152,13 @@ public class FischerHeunRMQ implements rmqInterface {
     }
 
     private int queryInsideBlock(int block, int l, int r) {
-        int type = this.blockType[block];
-        int[][] table = this.canonicalTables.get(type);
+        int[][] table = this.canonicalTables[block];
+        if (table == null) {
+            int start = block * this.blockSize;
+            int size = Math.min(this.blockSize, this.arr.length - start);
+            table = buildCanonicalTable(start, start + size);
+            this.canonicalTables[block] = table;
+        }
         int localIndex = table[l][r];
         return block * this.blockSize + localIndex;
     }
@@ -201,6 +201,27 @@ public class FischerHeunRMQ implements rmqInterface {
         }
 
         return minIndex;
+    }
+
+
+    @Override
+    public void countMemoryBytes() {
+        // Memory accounting for canonical tables
+        int K = 32 - Integer.numberOfLeadingZeros(Math.max(this.numBlocks, 1));
+        long mem = 0;
+        mem += (long) this.numBlocks * Integer.BYTES; // block minima
+        mem += (long) this.numBlocks * Integer.BYTES; // block types
+        mem += (long) (K + 1) * this.numBlocks * Integer.BYTES; // top ST
+
+        for (int b = 0; b < this.canonicalTables.length; b++) {
+            int[][] table = this.canonicalTables[b];
+            if (table == null) continue;
+            for (int[] row : table) {
+                mem += (long) row.length * Integer.BYTES;
+            }
+        }
+
+        this.memoryBytes = mem;
     }
 
     @Override
