@@ -11,7 +11,6 @@ public class ExperimentDataStructure {
     private double throughputOpsPerSec;
 
     private long preprocessTimeMs;
-    // Space metrics
     private long memoryBytes;
 
 
@@ -26,7 +25,7 @@ public class ExperimentDataStructure {
         int L ;
         int R ;
 
-        // Preproccess time
+        // Preprocess time
         long startPreprocess = System.currentTimeMillis();
         this.rmq.preprocess();
         long endPreprocess = System.currentTimeMillis();

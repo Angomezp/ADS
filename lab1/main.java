@@ -93,8 +93,9 @@ public class Main {
         Map<String, Map<Integer, List<Double>>> throughputs = new HashMap<>();
 
         for (String implName : implNames) {
-            System.out.println("Running experiments for: " + implName);
             for (int size : sizes) {
+
+                System.out.println("Running experiments for: " + implName + " with size " + size);
 
                 if (size <= 1 << 14) {
                     numQueries = 5_000_000;
@@ -137,7 +138,7 @@ public class Main {
                             .computeIfAbsent(size, k -> new ArrayList<>()).add(throughput);
                     throughputListLocal.add(throughput);
 
-                    System.out.println("Completado intento " + (trial + 1) + " de " + numTrials);
+                    System.out.println("Completed trial " + (trial + 1) + " of " + numTrials);
                 }
 
                 // After finishing trials for this impl and size, compute stats and append to CSVs
@@ -160,7 +161,7 @@ public class Main {
                 double bpe = (double) medMem / (double) size;
                 CSVHandler.appendMemoryLine(csvDir.resolve("memory_usage.csv"), implName, size, medMem, bpe);
 
-                System.out.println("Terminado " + implName + " size " + size + " — stats guardados.");
+                System.out.println("Finished " + implName + " size " + size + " — stats saved.");
             }
         }
 

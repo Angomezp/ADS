@@ -8,7 +8,6 @@ public class SegmentTreeRMQ implements rmqInterface {
     private final int[] tree;
 
     private final int n;
-
     private long memoryBytes;
 
     public SegmentTreeRMQ(int[] arr) {
@@ -23,12 +22,9 @@ public class SegmentTreeRMQ implements rmqInterface {
 
     @Override
     public void preprocess() {
-        this.tree[0] = -1; // Used to indicate invalid index in query results as 1-based indexing is used for tree nodes 
-        build(1,0, this.n - 1);
+        build(1, 0, this.n - 1);
     }
-    
-    //Preprocess the segment tree (Build)
-
+    // Build the segment tree. Nodes are stored in 1-based node indices.
     private void build(int node, int left, int right) {
         // leaf
         if (left == right) {
@@ -39,63 +35,44 @@ public class SegmentTreeRMQ implements rmqInterface {
         int mid = left + (right - left) / 2;
 
         int leftChild = node * 2;
-
         int rightChild = node * 2 + 1;
 
-        build(leftChild, left,mid );
-
-        build(rightChild, mid + 1, right );
+        build(leftChild, left, mid);
+        build(rightChild, mid + 1, right);
 
         int leftIndex = this.tree[leftChild];
-
         int rightIndex = this.tree[rightChild];
 
-        // leftmost minimum
+        // choose leftmost minimum on ties
         if (this.arr[leftIndex] <= this.arr[rightIndex]) {
             this.tree[node] = leftIndex;
-
         } else {
             this.tree[node] = rightIndex;
         }
     }
-
-    // Query the segment tree for the minimum index in range [i, j]
     @Override
     public int RMQ(int i, int j) {
-        return query(1,0,this.n - 1,i+1,j+1);
+        return query(1, 0, this.n - 1, i, j);
     }
-
-    // returns index of minimum in range [left, right] in the segment tree node representing range [tl, tr]
-    private int query(int node,int tl,int tr,int left,int right) {
-
+    // returns index of minimum in range [left, right] within node representing [tl, tr]
+    private int query(int node, int tl, int tr, int left, int right) {
         if (left > right) {
-            return 0; // Invalid range, return an index that will not affect the minimum
+            return -1; // invalid
         }
 
-        if ( tl == left && tr == right) {
-
+        if (tl == left && tr == right) {
             return this.tree[node];
         }
 
-        int tm  = tl + (tr - tl) / 2;
+        int tm = tl + (tr - tl) / 2;
 
-        int leftIndex = query(2 * node, tl, tm, left, Math.min(right,tm));
-
+        int leftIndex = query(2 * node, tl, tm, left, Math.min(right, tm));
         int rightIndex = query(node * 2 + 1, tm + 1, tr, Math.max(left, tm + 1), right);
 
-        if (leftIndex == 0) {
-            return rightIndex;
-        }
+        if (leftIndex == -1) return rightIndex;
+        if (rightIndex == -1) return leftIndex;
 
-        if (rightIndex == 0) {
-            return leftIndex;
-        }
-
-        if (this.arr[leftIndex] <= this.arr[rightIndex]) {
-            return leftIndex;
-        } else {
-            return rightIndex;
-        }
+        return (this.arr[leftIndex] <= this.arr[rightIndex]) ? leftIndex : rightIndex;
     }
 
     @Override
