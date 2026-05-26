@@ -212,9 +212,8 @@ public class FischerHeunRMQ implements rmqInterface {
         mem += (long) this.numBlocks * Integer.BYTES; // block minima
         mem += (long) this.numBlocks * Integer.BYTES; // block types
         mem += (long) (K + 1) * this.numBlocks * Integer.BYTES; // top ST
-
-        for (int b = 0; b < this.canonicalTables.length; b++) {
-            int[][] table = this.canonicalTables[b];
+        
+        for (int[][] table : this.canonicalTables) {
             if (table == null) continue;
             for (int[] row : table) {
                 mem += (long) row.length * Integer.BYTES;

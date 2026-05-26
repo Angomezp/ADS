@@ -62,7 +62,7 @@ public class SegmentTreeRMQ implements rmqInterface {
     // Query the segment tree for the minimum index in range [i, j]
     @Override
     public int RMQ(int i, int j) {
-        return query(1,0,this.n - 1,i,j);
+        return query(1,0,this.n - 1,i+1,j+1);
     }
 
     // returns index of minimum in range [left, right] in the segment tree node representing range [tl, tr]

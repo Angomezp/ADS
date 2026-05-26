@@ -8,6 +8,7 @@ public class ExperimentDataStructure {
     private final rmqInterface rmq;
 
     private long queryTimeMs;
+    private double throughputOpsPerSec;
 
     private long preprocessTimeMs;
     // Space metrics
@@ -44,6 +45,14 @@ public class ExperimentDataStructure {
         long endQuery = System.currentTimeMillis();
         this.queryTimeMs = endQuery - startQuery;
 
+        // Throughput: queries per second for the batch
+        int numQueries = this.queries.length;
+        if (this.queryTimeMs > 0) {
+            this.throughputOpsPerSec = (double) numQueries * 1000.0 / (double) this.queryTimeMs;
+        } else {
+            this.throughputOpsPerSec = Double.POSITIVE_INFINITY;
+        }
+
         // Memory usage
         this.rmq.countMemoryBytes();
         this.memoryBytes = this.rmq.getMemoryBytes();
@@ -58,6 +67,10 @@ public class ExperimentDataStructure {
 
     public long getQueryTimeMs() {
         return this.queryTimeMs;
+    }
+
+    public double getThroughputOpsPerSec() {
+        return this.throughputOpsPerSec;
     }
 
     public long getPreprocessTimeMs() {

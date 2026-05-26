@@ -20,19 +20,18 @@ import lab1.src.datastructures.rmqInterface;
 import lab1.src.utils.CSVHandler;
 import lab1.src.utils.ExperimentDataStructure;
 import lab1.src.utils.RandomGenerator;
+import lab1.src.utils.StatsUtils;
 import lab1.src.utils.Validator;
-
 
 public class Main {
     public static void main(String[] args) {
-        
-        //  Configurations for experiments
-        //  sizes: 1024, 4096, 16384, 65536, 262144, 1048576
+
+        // Configurations for experiments
         int testSize = 5_000;
-        int[] sizes = {1<<10, 1<<12, 1<<14, 1<<16, 1<<18, 1<<20}; 
-        int bound = 1_000_000_000; 
+        int[] sizes = {1 << 10, 1 << 12, 1 << 14, 1 << 16, 1 << 18, 1 << 20};
+        int bound = 1_000_000_000;
         long seed = 123456789L;
-        int numCorrectnessQueries = 10000;
+        int numCorrectnessQueries = 10_000;
         int numTrials = 30;
         int numQueries;
 
@@ -42,10 +41,17 @@ public class Main {
         int[][] testQueries;
         ExperimentDataStructure experiment;
 
-        //  Correctness Validation
+        // Ensure CSV directory exists before running experiments
+        Path csvDir = Paths.get("csv");
+        try {
+            CSVHandler.ensureDir(csvDir);
+        } catch (IOException e) {
+            System.err.println("Failed to create csv directory: " + e.getMessage());
+        }
 
+        // Correctness Validation
         System.out.println("Validating implementations with random test cases...");
-        
+
         testArray = RandomGenerator.generateRandomArray(testSize, bound, seed);
         testQueries = RandomGenerator.generateRandomQueries(numCorrectnessQueries, testArray.length, seed);
 
@@ -68,8 +74,7 @@ public class Main {
             System.out.println(" - " + impl.getClass().getSimpleName() + " valid: " + ok);
         }
 
-        // Performance Experiments 
-
+        // Performance Experiments
         String[] implNames = new String[] {
             "NaiveRMQ",
             "FullPreprocessingRMQ",
@@ -85,21 +90,26 @@ public class Main {
         Map<String, Map<Integer, List<Long>>> preprocessTimes = new HashMap<>();
         Map<String, Map<Integer, List<Long>>> memoryBytes = new HashMap<>();
         Map<String, Map<Integer, List<Double>>> perQueryMs = new HashMap<>();
+        Map<String, Map<Integer, List<Double>>> throughputs = new HashMap<>();
 
         for (String implName : implNames) {
             System.out.println("Running experiments for: " + implName);
             for (int size : sizes) {
 
-
-                if (size <= 1<<14){
+                if (size <= 1 << 14) {
                     numQueries = 5_000_000;
-                    
-                }else{
+                } else {
                     numQueries = 1_000_000;
-                    if (implName.equals("FullPreprocessingRMQ")){
+                    if (implName.equals("FullPreprocessingRMQ")) {
                         break;
                     }
                 }
+
+                // accumulate per-size lists for this impl
+                List<Long> preprocessListLocal = new ArrayList<>();
+                List<Long> memoryListLocal = new ArrayList<>();
+                List<Double> perQueryListLocal = new ArrayList<>();
+                List<Double> throughputListLocal = new ArrayList<>();
 
                 for (int trial = 0; trial < numTrials; trial++) {
                     testArray = RandomGenerator.generateRandomArray(size, bound, seed + trial);
@@ -111,66 +121,65 @@ public class Main {
 
                     preprocessTimes.computeIfAbsent(implName, k -> new HashMap<>())
                             .computeIfAbsent(size, k -> new ArrayList<>()).add(experiment.getPreprocessTimeMs());
+                    preprocessListLocal.add(experiment.getPreprocessTimeMs());
 
                     memoryBytes.computeIfAbsent(implName, k -> new HashMap<>())
                             .computeIfAbsent(size, k -> new ArrayList<>()).add(experiment.getMemoryBytes());
+                    memoryListLocal.add(experiment.getMemoryBytes());
 
                     double perQuery = (double) experiment.getQueryTimeMs() / (double) numQueries;
                     perQueryMs.computeIfAbsent(implName, k -> new HashMap<>())
                             .computeIfAbsent(size, k -> new ArrayList<>()).add(perQuery);
+                    perQueryListLocal.add(perQuery);
 
+                    double throughput = experiment.getThroughputOpsPerSec();
+                    throughputs.computeIfAbsent(implName, k -> new HashMap<>())
+                            .computeIfAbsent(size, k -> new ArrayList<>()).add(throughput);
+                    throughputListLocal.add(throughput);
+
+                    System.out.println("Completado intento " + (trial + 1) + " de " + numTrials);
                 }
+
+                // After finishing trials for this impl and size, compute stats and append to CSVs
+                long medPre = StatsUtils.medianLong(preprocessListLocal);
+                double meanPre = StatsUtils.meanLong(preprocessListLocal);
+                double sdPre = StatsUtils.stddevLong(preprocessListLocal);
+                long minPre = preprocessListLocal.stream().mapToLong(x -> x).min().orElse(0L);
+                long maxPre = preprocessListLocal.stream().mapToLong(x -> x).max().orElse(0L);
+                CSVHandler.appendPreprocessLine(csvDir.resolve("preprocessing_time.csv"), implName, size, medPre, meanPre, sdPre, minPre, maxPre);
+
+                double medQuery = StatsUtils.medianDouble(perQueryListLocal);
+                double meanQuery = StatsUtils.meanDouble(perQueryListLocal);
+                double sdQuery = StatsUtils.stddevDouble(perQueryListLocal);
+                double minQuery = perQueryListLocal.stream().mapToDouble(x -> x).min().orElse(0.0);
+                double maxQuery = perQueryListLocal.stream().mapToDouble(x -> x).max().orElse(0.0);
+                double medThroughput = StatsUtils.medianDouble(throughputListLocal);
+                CSVHandler.appendQueryLine(csvDir.resolve("query_time.csv"), implName, size, medThroughput, medQuery, meanQuery, sdQuery, minQuery, maxQuery);
+
+                long medMem = StatsUtils.medianLong(memoryListLocal);
+                double bpe = (double) medMem / (double) size;
+                CSVHandler.appendMemoryLine(csvDir.resolve("memory_usage.csv"), implName, size, medMem, bpe);
+
+                System.out.println("Terminado " + implName + " size " + size + " — stats guardados.");
             }
         }
 
-        Path csvDir = Paths.get("csv");
-        try {
-            CSVHandler.ensureDir(csvDir);
-        } catch (IOException e) {
-            System.err.println("Failed to create csv directory: " + e.getMessage());
-        }
-
-        CSVHandler.writePreprocessCsv(csvDir.resolve("preprocessing_time.csv"), preprocessTimes);
-        CSVHandler.writeQueryCsv(csvDir.resolve("query_time_per_query.csv"), perQueryMs);
-        CSVHandler.writeMemoryCsv(csvDir.resolve("memory_usage.csv"), memoryBytes);
-
-        System.out.println("CSV files written to: " + csvDir.toAbsolutePath());
+        System.out.println("CSV files updated in: " + csvDir.toAbsolutePath());
     }
-
-
-
-
 
     private static rmqInterface createInstance(String name, int[] arr) {
-        switch (name) {
-            case "NaiveRMQ" -> {
-                return new NaiveRMQ(arr);
-            }
-            case "FullPreprocessingRMQ" -> {
-                return new FullPreprocessingRMQ(arr);
-            }
-            case "BlockDecompRMQ" -> {
-                return new BlockDecompRMQ(arr);
-            }
-            case "SparseTableRMQ" -> {
-                return new SparseTableRMQ(arr);
-            }
-            case "HybridARMQ" -> {
-                return new HybridARMQ(arr);
-            }
-            case "HybridBRMQ" -> {
-                return new HybridBRMQ(arr);
-            }
-            case "HybridCRMQ" -> {
-                return new HybridCRMQ(arr);
-            }
-            case "FischerHeunRMQ" -> {
-                return new FischerHeunRMQ(arr);
-            }
-            case "SegmentTreeRMQ" -> {
-                return new SegmentTreeRMQ(arr);
-            }
+        return switch (name) {
+            case "NaiveRMQ" -> new NaiveRMQ(arr);
+            case "FullPreprocessingRMQ" -> new FullPreprocessingRMQ(arr);
+            case "BlockDecompRMQ" -> new BlockDecompRMQ(arr);
+            case "SparseTableRMQ" -> new SparseTableRMQ(arr);
+            case "HybridARMQ" -> new HybridARMQ(arr);
+            case "HybridBRMQ" -> new HybridBRMQ(arr);
+            case "HybridCRMQ" -> new HybridCRMQ(arr);
+            case "FischerHeunRMQ" -> new FischerHeunRMQ(arr);
+            case "SegmentTreeRMQ" -> new SegmentTreeRMQ(arr);
             default -> throw new IllegalArgumentException("Unknown impl: " + name);
-        }
+        };
     }
 }
+                        
