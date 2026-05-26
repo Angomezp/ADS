@@ -87,9 +87,9 @@ public class Main {
             "SegmentTreeRMQ"
         };
 
-        Map<String, Map<Integer, List<Long>>> preprocessTimes = new HashMap<>();
-        Map<String, Map<Integer, List<Long>>> memoryBytes = new HashMap<>();
-        Map<String, Map<Integer, List<Double>>> perQueryMs = new HashMap<>();
+        Map<String, Map<Integer, List<Long>>> preprocessTimesByImpl = new HashMap<>();
+        Map<String, Map<Integer, List<Long>>> memoryBytesByImpl = new HashMap<>();
+        Map<String, Map<Integer, List<Double>>> batchQueryMsByImpl = new HashMap<>();
         Map<String, Map<Integer, List<Double>>> throughputs = new HashMap<>();
 
         for (String implName : implNames) {
@@ -107,10 +107,9 @@ public class Main {
                 }
 
                 // accumulate per-size lists for this impl
-                List<Long> preprocessListLocal = new ArrayList<>();
-                List<Long> memoryListLocal = new ArrayList<>();
-                List<Double> perQueryListLocal = new ArrayList<>();
-                List<Double> throughputListLocal = new ArrayList<>();
+                List<Long> preprocessList = new ArrayList<>();
+                List<Long> memoryList = new ArrayList<>();
+                List<Double> throughputList = new ArrayList<>();
 
                 for (int trial = 0; trial < numTrials; trial++) {
                     testArray = RandomGenerator.generateRandomArray(size, bound, seed + trial);
@@ -120,48 +119,49 @@ public class Main {
                     experiment = new ExperimentDataStructure(testArray, testQueries, impl);
                     experiment.Experiment();
 
-                    preprocessTimes.computeIfAbsent(implName, k -> new HashMap<>())
+                        preprocessTimesByImpl.computeIfAbsent(implName, k -> new HashMap<>())
                             .computeIfAbsent(size, k -> new ArrayList<>()).add(experiment.getPreprocessTimeMs());
-                    preprocessListLocal.add(experiment.getPreprocessTimeMs());
+                        preprocessList.add(experiment.getPreprocessTimeMs());
 
-                    memoryBytes.computeIfAbsent(implName, k -> new HashMap<>())
+                        memoryBytesByImpl.computeIfAbsent(implName, k -> new HashMap<>())
                             .computeIfAbsent(size, k -> new ArrayList<>()).add(experiment.getMemoryBytes());
-                    memoryListLocal.add(experiment.getMemoryBytes());
+                        memoryList.add(experiment.getMemoryBytes());
 
-                    double perQuery = (double) experiment.getQueryTimeMs() / (double) numQueries;
-                    perQueryMs.computeIfAbsent(implName, k -> new HashMap<>())
-                            .computeIfAbsent(size, k -> new ArrayList<>()).add(perQuery);
-                    perQueryListLocal.add(perQuery);
+                        double batchQueryMs = experiment.getQueryTimeMsDouble();
+                            batchQueryMsByImpl.computeIfAbsent(implName, k -> new HashMap<>())
+                                .computeIfAbsent(size, k -> new ArrayList<>()).add(batchQueryMs);
 
                     double throughput = experiment.getThroughputOpsPerSec();
-                    throughputs.computeIfAbsent(implName, k -> new HashMap<>())
+                        throughputs.computeIfAbsent(implName, k -> new HashMap<>())
                             .computeIfAbsent(size, k -> new ArrayList<>()).add(throughput);
-                    throughputListLocal.add(throughput);
+                        throughputList.add(throughput);
 
-                    System.out.println("Completed trial " + (trial + 1) + " of " + numTrials);
+                    if ((trial + 1) % 5 == 0) {
+                        System.out.println(" - Completed trial " + (trial + 1) + " of " + numTrials);
+                    }
                 }
 
                 // After finishing trials for this impl and size, compute stats and append to CSVs
-                long medPre = StatsUtils.medianLong(preprocessListLocal);
-                double meanPre = StatsUtils.meanLong(preprocessListLocal);
-                double sdPre = StatsUtils.stddevLong(preprocessListLocal);
-                long minPre = preprocessListLocal.stream().mapToLong(x -> x).min().orElse(0L);
-                long maxPre = preprocessListLocal.stream().mapToLong(x -> x).max().orElse(0L);
+                long medPre = StatsUtils.medianLong(preprocessList);
+                double meanPre = StatsUtils.meanLong(preprocessList);
+                double sdPre = StatsUtils.stddevLong(preprocessList);
+                long minPre = preprocessList.stream().mapToLong(x -> x).min().orElse(0L);
+                long maxPre = preprocessList.stream().mapToLong(x -> x).max().orElse(0L);
                 CSVHandler.appendPreprocessLine(csvDir.resolve("preprocessing_time.csv"), implName, size, medPre, meanPre, sdPre, minPre, maxPre);
 
-                double medQuery = StatsUtils.medianDouble(perQueryListLocal);
-                double meanQuery = StatsUtils.meanDouble(perQueryListLocal);
-                double sdQuery = StatsUtils.stddevDouble(perQueryListLocal);
-                double minQuery = perQueryListLocal.stream().mapToDouble(x -> x).min().orElse(0.0);
-                double maxQuery = perQueryListLocal.stream().mapToDouble(x -> x).max().orElse(0.0);
-                double medThroughput = StatsUtils.medianDouble(throughputListLocal);
+                double medQuery = StatsUtils.medianDouble(batchQueryMsByImpl.getOrDefault(implName, new HashMap<>()).getOrDefault(size, new ArrayList<>()));
+                double meanQuery = StatsUtils.meanDouble(batchQueryMsByImpl.getOrDefault(implName, new HashMap<>()).getOrDefault(size, new ArrayList<>()));
+                double sdQuery = StatsUtils.stddevDouble(batchQueryMsByImpl.getOrDefault(implName, new HashMap<>()).getOrDefault(size, new ArrayList<>()));
+                double minQuery = batchQueryMsByImpl.getOrDefault(implName, new HashMap<>()).getOrDefault(size, new ArrayList<>()).stream().mapToDouble(x -> x).min().orElse(0.0);
+                double maxQuery = batchQueryMsByImpl.getOrDefault(implName, new HashMap<>()).getOrDefault(size, new ArrayList<>()).stream().mapToDouble(x -> x).max().orElse(0.0);
+                double medThroughput = StatsUtils.medianDouble(throughputList);
                 CSVHandler.appendQueryLine(csvDir.resolve("query_time.csv"), implName, size, medThroughput, medQuery, meanQuery, sdQuery, minQuery, maxQuery);
 
-                long medMem = StatsUtils.medianLong(memoryListLocal);
+                long medMem = StatsUtils.medianLong(memoryList);
                 double bpe = (double) medMem / (double) size;
                 CSVHandler.appendMemoryLine(csvDir.resolve("memory_usage.csv"), implName, size, medMem, bpe);
 
-                System.out.println("Finished " + implName + " size " + size + " — stats saved.");
+                System.out.println("Finished " + implName + " size " + size + "  stats saved.");
             }
         }
 

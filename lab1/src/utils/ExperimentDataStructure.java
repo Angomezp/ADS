@@ -7,7 +7,7 @@ public class ExperimentDataStructure {
     private final int[][] queries;
     private final rmqInterface rmq;
 
-    private long queryTimeMs;
+    private long queryTimeNs;
     private double throughputOpsPerSec;
 
     private long preprocessTimeMs;
@@ -32,8 +32,8 @@ public class ExperimentDataStructure {
         this.preprocessTimeMs = endPreprocess - startPreprocess ;
 
 
-        // Query time
-        long startQuery = System.currentTimeMillis();
+        // Query time (high-resolution)
+        long startQuery = System.nanoTime();
         int idx = 0;
         for (int[] query : this.queries) {
             L = query[0];
@@ -41,13 +41,13 @@ public class ExperimentDataStructure {
             indexResults[idx] = this.rmq.RMQ(L, R);
             idx++;
         }
-        long endQuery = System.currentTimeMillis();
-        this.queryTimeMs = endQuery - startQuery;
+        long endQuery = System.nanoTime();
+        this.queryTimeNs = endQuery - startQuery;
 
-        // Throughput: queries per second for the batch
+        // Throughput: queries per second for the batch (using nanoseconds)
         int numQueries = this.queries.length;
-        if (this.queryTimeMs > 0) {
-            this.throughputOpsPerSec = (double) numQueries * 1000.0 / (double) this.queryTimeMs;
+        if (this.queryTimeNs > 0) {
+            this.throughputOpsPerSec = (double) numQueries * 1e9 / (double) this.queryTimeNs;
         } else {
             this.throughputOpsPerSec = Double.POSITIVE_INFINITY;
         }
@@ -63,9 +63,8 @@ public class ExperimentDataStructure {
         }
     }
 
-
-    public long getQueryTimeMs() {
-        return this.queryTimeMs;
+    public double getQueryTimeMsDouble() {
+        return (double) this.queryTimeNs / 1_000_000.0;
     }
 
     public double getThroughputOpsPerSec() {
