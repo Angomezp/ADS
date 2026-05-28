@@ -36,7 +36,6 @@ public class Main {
         int numQueries;
 
         // Variables
-        rmqInterface[] implementations;
         int[] testArray;
         int[][] testQueries;
         ExperimentDataStructure experiment;
@@ -49,32 +48,6 @@ public class Main {
             System.err.println("Failed to create csv directory: " + e.getMessage());
         }
 
-        // Correctness Validation
-        System.out.println("Validating implementations with random test cases...");
-
-        testArray = RandomGenerator.generateRandomArray(testSize, bound, seed);
-        testQueries = RandomGenerator.generateRandomQueries(numCorrectnessQueries, testArray.length, seed);
-
-        implementations = new rmqInterface[] {
-            new NaiveRMQ(testArray),
-            new FullPreprocessingRMQ(testArray),
-            new BlockDecompRMQ(testArray),
-            new SparseTableRMQ(testArray),
-            new HybridARMQ(testArray),
-            new HybridBRMQ(testArray),
-            new HybridCRMQ(testArray),
-            new FischerHeunRMQ(testArray),
-            new SegmentTreeRMQ(testArray)
-        };
-
-        for (rmqInterface impl : implementations) {
-            impl.preprocess();
-            impl.countMemoryBytes();
-            boolean ok = Validator.validateDataStructure(impl, testArray, testQueries);
-            System.out.println(" - " + impl.getClass().getSimpleName() + " valid: " + ok);
-        }
-
-        // Performance Experiments
         String[] implNames = new String[] {
             "NaiveRMQ",
             "FullPreprocessingRMQ",
@@ -87,8 +60,22 @@ public class Main {
             "SegmentTreeRMQ"
         };
 
-        Map<String, Map<Integer, List<Long>>> preprocessTimesByImpl = new HashMap<>();
-        Map<String, Map<Integer, List<Long>>> memoryBytesByImpl = new HashMap<>();
+        // Correctness Validation
+        System.out.println("Validating implementations with random test cases...");
+
+        testArray = RandomGenerator.generateRandomArray(testSize, bound, seed);
+        testQueries = RandomGenerator.generateRandomQueries(numCorrectnessQueries, testArray.length, seed);
+
+        for (String implName : implNames) {
+            rmqInterface impl = createInstance(implName, testArray);
+            impl.preprocess();
+            impl.countMemoryBytes();
+            boolean ok = Validator.validateDataStructure(impl, testArray, testQueries);
+            System.out.println(" - " + impl.getClass().getSimpleName() + " valid: " + ok);
+        }
+
+        // Performance Experiments
+
         Map<String, Map<Integer, List<Double>>> batchQueryMsByImpl = new HashMap<>();
         Map<String, Map<Integer, List<Double>>> throughputs = new HashMap<>();
 
@@ -119,22 +106,17 @@ public class Main {
                     experiment = new ExperimentDataStructure(testArray, testQueries, impl);
                     experiment.Experiment();
 
-                        preprocessTimesByImpl.computeIfAbsent(implName, k -> new HashMap<>())
-                            .computeIfAbsent(size, k -> new ArrayList<>()).add(experiment.getPreprocessTimeMs());
-                        preprocessList.add(experiment.getPreprocessTimeMs());
+                    preprocessList.add(experiment.getPreprocessTimeMs());
+                    memoryList.add(experiment.getMemoryBytes());
 
-                        memoryBytesByImpl.computeIfAbsent(implName, k -> new HashMap<>())
-                            .computeIfAbsent(size, k -> new ArrayList<>()).add(experiment.getMemoryBytes());
-                        memoryList.add(experiment.getMemoryBytes());
-
-                        double batchQueryMs = experiment.getQueryTimeMsDouble();
-                            batchQueryMsByImpl.computeIfAbsent(implName, k -> new HashMap<>())
-                                .computeIfAbsent(size, k -> new ArrayList<>()).add(batchQueryMs);
+                    double batchQueryMs = experiment.getQueryTimeMsDouble();
+                    batchQueryMsByImpl.computeIfAbsent(implName, k -> new HashMap<>())
+                        .computeIfAbsent(size, k -> new ArrayList<>()).add(batchQueryMs);
 
                     double throughput = experiment.getThroughputOpsPerSec();
-                        throughputs.computeIfAbsent(implName, k -> new HashMap<>())
-                            .computeIfAbsent(size, k -> new ArrayList<>()).add(throughput);
-                        throughputList.add(throughput);
+                    throughputs.computeIfAbsent(implName, k -> new HashMap<>())
+                        .computeIfAbsent(size, k -> new ArrayList<>()).add(throughput);
+                    throughputList.add(throughput);
 
                     if ((trial + 1) % 5 == 0) {
                         System.out.println(" - Completed trial " + (trial + 1) + " of " + numTrials);
