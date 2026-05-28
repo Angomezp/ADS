@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lab1.src.datastructures.BlockDecompRMQ;
 import lab1.src.datastructures.FischerHeunRMQ;
 import lab1.src.datastructures.FullPreprocessingRMQ;
@@ -76,9 +74,6 @@ public class Main {
 
         // Performance Experiments
 
-        Map<String, Map<Integer, List<Double>>> batchQueryMsByImpl = new HashMap<>();
-        Map<String, Map<Integer, List<Double>>> throughputs = new HashMap<>();
-
         for (String implName : implNames) {
             for (int size : sizes) {
 
@@ -96,6 +91,7 @@ public class Main {
                 // accumulate per-size lists for this impl
                 List<Long> preprocessList = new ArrayList<>();
                 List<Long> memoryList = new ArrayList<>();
+                List<Double> batchQueryList = new ArrayList<>();
                 List<Double> throughputList = new ArrayList<>();
 
                 for (int trial = 0; trial < numTrials; trial++) {
@@ -110,12 +106,9 @@ public class Main {
                     memoryList.add(experiment.getMemoryBytes());
 
                     double batchQueryMs = experiment.getQueryTimeMsDouble();
-                    batchQueryMsByImpl.computeIfAbsent(implName, k -> new HashMap<>())
-                        .computeIfAbsent(size, k -> new ArrayList<>()).add(batchQueryMs);
+                    batchQueryList.add(batchQueryMs);
 
                     double throughput = experiment.getThroughputOpsPerSec();
-                    throughputs.computeIfAbsent(implName, k -> new HashMap<>())
-                        .computeIfAbsent(size, k -> new ArrayList<>()).add(throughput);
                     throughputList.add(throughput);
 
                     if ((trial + 1) % 5 == 0) {
@@ -130,12 +123,12 @@ public class Main {
                 long minPre = preprocessList.stream().mapToLong(x -> x).min().orElse(0L);
                 long maxPre = preprocessList.stream().mapToLong(x -> x).max().orElse(0L);
                 CSVHandler.appendPreprocessLine(csvDir.resolve("preprocessing_time.csv"), implName, size, medPre, meanPre, sdPre, minPre, maxPre);
-
-                double medQuery = StatsUtils.medianDouble(batchQueryMsByImpl.getOrDefault(implName, new HashMap<>()).getOrDefault(size, new ArrayList<>()));
-                double meanQuery = StatsUtils.meanDouble(batchQueryMsByImpl.getOrDefault(implName, new HashMap<>()).getOrDefault(size, new ArrayList<>()));
-                double sdQuery = StatsUtils.stddevDouble(batchQueryMsByImpl.getOrDefault(implName, new HashMap<>()).getOrDefault(size, new ArrayList<>()));
-                double minQuery = batchQueryMsByImpl.getOrDefault(implName, new HashMap<>()).getOrDefault(size, new ArrayList<>()).stream().mapToDouble(x -> x).min().orElse(0.0);
-                double maxQuery = batchQueryMsByImpl.getOrDefault(implName, new HashMap<>()).getOrDefault(size, new ArrayList<>()).stream().mapToDouble(x -> x).max().orElse(0.0);
+                double medQuery = StatsUtils.medianDouble(batchQueryList);
+                double meanQuery = StatsUtils.meanDouble(batchQueryList);
+                double sdQuery = StatsUtils.stddevDouble(batchQueryList);
+                double minQuery = batchQueryList.stream().mapToDouble(x -> x).min().orElse(0.0);
+                double maxQuery = batchQueryList.stream().mapToDouble(x -> x).max().orElse(0.0);
+                
                 double medThroughput = StatsUtils.medianDouble(throughputList);
                 CSVHandler.appendQueryLine(csvDir.resolve("query_time.csv"), implName, size, medThroughput, medQuery, meanQuery, sdQuery, minQuery, maxQuery);
 
