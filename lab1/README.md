@@ -23,7 +23,7 @@ Archivos y carpetas (explicación):
 - `setup.bat`: script Windows que compila recursivamente los `.java` en `out/` y ejecuta `lab1.Main`.
 	- Uso: `setup.bat` compila y ejecuta. `setup.bat clean` borra `out/`.
 - `Reporte.pdf`: pdf en el que se encuentra el reporte del laboratorio (explicaciones, graficas, etc).
- - `Reporte.pdf`: PDF en el que se encuentra el reporte del laboratorio (explicaciones, gráficas, etc).
+ - `ADS-2026_1-Laboratorio_1.pdf`: PDF en el que se encuentra el reporte del laboratorio (explicaciones, gráficas, etc).
 
 Cómo usar (rápido):
 - Generar gráficos (desde la raíz `lab1`):
