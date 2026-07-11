@@ -2,8 +2,8 @@ package lab2.src.LeafTree;
 
 import java.util.ArrayList;
 import java.util.List;
-import lab2.src.Utils.Metrics;
 import lab2.src.Interfaces.AVL_Tree_Interface;
+import lab2.src.Utils.Metrics;
 
 public class AVL_LeafTree implements AVL_Tree_Interface {
 
@@ -356,7 +356,7 @@ public class AVL_LeafTree implements AVL_Tree_Interface {
     }
 
     private InternalNode rotateLeft(InternalNode x) {
-        metrics.incrementRotations();
+        this.metrics.incrementRotations();
 
         if (x.getRight().isLeaf())
             return x;
@@ -383,7 +383,7 @@ public class AVL_LeafTree implements AVL_Tree_Interface {
     }
 
     private InternalNode rotateRight(InternalNode y) {
-        metrics.incrementRotations();
+        this.metrics.incrementRotations();
 
         if (y.getLeft().isLeaf())
             return y;

@@ -201,7 +201,7 @@ public class AVL_NodeTree implements AVL_Tree_Interface {
     }
 
     private Node rotateLeft(Node x) {
-        metrics.incrementRotations();
+        this.metrics.incrementRotations();
 
         Node y = x.getRight();
         Node T2 = y.getLeft();
@@ -216,7 +216,7 @@ public class AVL_NodeTree implements AVL_Tree_Interface {
     }
 
     private Node rotateRight(Node y) {
-        metrics.incrementRotations();
+        this.metrics.incrementRotations();
 
         Node x = y.getLeft();
         Node T2 = x.getRight();
@@ -241,12 +241,12 @@ public class AVL_NodeTree implements AVL_Tree_Interface {
 
     @Override
     public Metrics getMetrics() {
-        return metrics;
+        return this.metrics;
     }
 
     @Override
     public void resetMetrics() {
-        metrics.reset();
+        this.metrics.reset();
     }
 
     @Override
