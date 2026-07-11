@@ -158,7 +158,7 @@ public class AVL_NodeTree implements AVL_Tree_Interface {
     // AVL AUXILIARY METHODS
     private int height(Node node) {
         if (node == null)
-            return 0;
+            return -1;
         return node.getHeight();
     }
 
